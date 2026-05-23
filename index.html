@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Keeper</title>
+    <style>
+        body {
+            background-image: url("lofi-study-girl.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column; /* Đổi thành cột để phân tách app và footer */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Sử dụng min-height thay vì height để không bị cắt nội dung */
+            margin: 0;
+            user-select: none;
+            position: relative;
+        }
+
+        .app-panel {
+            /* Tăng nhẹ độ đậm nền lên 0.6 để các chi tiết bên trong app rõ ràng hơn trên ảnh lofi */
+            background-color: rgba(28, 28, 28, 0.6); 
+            
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+
+            width: 420px;
+            height: 560px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px; /* Tạo khoảng cách an toàn với footer phía dưới */
+            margin-top: auto; /* Đẩy app ra giữa màn hình theo chiều dọc */
+        }
+
+        /* Hệ thống thông tin Nhân vật / Cấp độ phía trên */
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(37, 37, 37, 0.8);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .level-badge {
+            background-color: #00a2ff;
+            color: #1c1c1c;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .xp-container {
+            flex-grow: 1;
+            margin-left: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .xp-text {
+            font-size: 11px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .xp-bar-bg {
+            background-color: #3d3d3d;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .xp-bar-fill {
+            background-color: #2ecc71; 
+            width: 0%;
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .app-title {
+            font-size: 14px;
+            color: #e0e0e0;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .timer-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle-bg {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-ring__circle {
+            stroke: #00a2ff;
+            stroke-dasharray: 628;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .time-display {
+            position: absolute;
+            font-size: 42px;
+            font-weight: 400;
+            color: #ffffff;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-play {
+            background-color: #00a2ff;
+            border: none;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-play:hover { background-color: #0082cc; }
+        .btn-play:active { transform: scale(0.95); }
+        .btn-play svg { fill: #1c1c1c; width: 24px; height: 24px; margin-left: 2px; }
+
+        .btn-reset {
+            background-color: rgba(45, 45, 45, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .btn-reset:hover { background-color: rgba(61, 61, 61, 0.8); }
+        .btn-reset svg { fill: #a0a0a0; width: 18px; height: 18px; }
+
+   
+        .mode-selector {
+            display: flex;
+            justify-content: space-around;
+            background-color: rgba(37, 37, 37, 0.8);
+            padding: 6px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 15px;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: #aaa;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+        }
+
+        /* Khi chế độ Normal được kích hoạt */
+        .mode-btn.active#btn45 {
+            color: #ffffff;
+            background-color: #1c1c1c;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tạo điểm nhấn đặc biệt cho chế độ Hardcore khi kích hoạt */
+        .mode-btn.active#btn60 {
+            color: #ff4757; /* Chữ màu đỏ cam cá tính */
+            background-color: #1c1c1c;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(255, 71, 87, 0.2);
+            border: 1px solid rgba(255, 71, 87, 0.4);
+        }
+
+        .mode-btn:disabled {
+            color: #555 !important;
+            background: none !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+        }
+
+        /* Modal thông báo hết giờ */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(12, 12, 12, 0.95);
+            border-radius: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .modal-title.study { color: #2ecc71; }
+        .modal-title.break { color: #e74c3c; }
+        .modal-desc { font-size: 14px; color: #aaa; margin-bottom: 25px; line-height: 1.4; }
+        .modal-btn {
+            background-color: #ffffff; color: #1c1c1c;
+            border: none; padding: 10px 24px; font-weight: bold;
+            border-radius: 6px; cursor: pointer; transition: background-color 0.2s;
+        }
+        .modal-btn:hover { background-color: #e0e0e0; }
+
+        /* 👑 THIẾT KẾ MỚI CHO FOOTER CỦA BẠN KHHOA */
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            background-color: rgba(0, 0, 0, 0.4); /* Lớp phủ đen trong suốt nhẹ sát đáy màn hình */
+            backdrop-filter: blur(5px); /* Làm mờ ảnh nền nhẹ vùng chân trang */
+            -webkit-backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: auto; /* Đẩy sát xuống đáy màn hình độc lập */
+        }
+
+        footer p {
+            margin: 4px 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6); /* Chữ màu xám trắng tinh giản */
+            letter-spacing: 0.5px;
+        }
+
+        footer a {
+            color: #00a2ff; /* Làm nổi bật liên kết email sinh viên */
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+            color: #0082cc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-panel">
+        <div class="status-header">
+            <div>LV <span class="level-badge" id="levelDisplay">1</span></div>
+            <div class="xp-container">
+                <div class="xp-text">
+                    <span>Kinh nghiệm (XP)</span>
+                    <span id="xpTextDisplay">0 / 10</span>
+                </div>
+                <div class="xp-bar-bg">
+                    <div class="xp-bar-fill" id="xpBarDisplay"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-title" id="currentModeTitle">CHẾ ĐỘ: NORMAL (45M)</div>
+
+        <div class="timer-container">
+            <svg class="progress-ring" width="240" height="240">
+                <circle class="progress-ring__circle-bg" stroke-width="6" fill="transparent" r="100" cx="120" cy="120"/>
+                <circle class="progress-ring__circle" id="ring" stroke-width="6" fill="transparent" r="100" cx="120" cy="120"/>
+            </svg>
+            <div class="time-display" id="display">45:00</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-play" id="playBtn" onclick="toggleTimer()">
+                <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="btn-reset" onclick="resetTimer()">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </div>
+
+        <div class="mode-selector" id="selectorContainer">
+            <button class="mode-btn active" id="btn45" onclick="changeStudyOption(45)">Normal (45 Phút)</button>
+            <button class="mode-btn" id="btn60" onclick="changeStudyOption(60)">Hardcore (60 Phút)</button>
+        </div>
+    </div>
+
+    <div class="modal" id="timeUpModal">
+        <div class="modal-title" id="modalTitle">HẾT GIỜ!</div>
+        <div class="modal-desc" id="modalDesc">Nội dung thông báo ở đây.</div>
+        <button class="modal-btn" onclick="closeModal()">Xác nhận</button>
+    </div>
+
+    <script>
+        // Hệ thống RPG (Kinh nghiệm & Cấp độ)
+        let level = 1;
+        let xp = 0;
+        const xpPerLevel = 10;
+
+        // Trạng thái đếm giờ
+        let currentMode = "STUDY"; 
+        let chosenStudyMinutes = 45; 
+        let totalSeconds = chosenStudyMinutes * 60;
+        let timeRemaining = totalSeconds;
+        let timerId = null;
+        let isPlaying = false;
+
+        // Dom Elements
+        const display = document.getElementById('display');
+        const ring = document.getElementById('ring');
+        const playIcon = document.getElementById('playIcon');
+        const currentModeTitle = document.getElementById('currentModeTitle');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const xpTextDisplay = document.getElementById('xpTextDisplay');
+        const xpBarDisplay = document.getElementById('xpBarDisplay');
+        
+        // Modal Elements
+        const timeUpModal = document.getElementById('timeUpModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+
+        function updateUI() {
+            let mins = Math.floor(timeRemaining / 60);
+            let secs = timeRemaining % 60;
+            display.innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            let offset = 628 - (timeRemaining / totalSeconds) * 628;
+            ring.style.strokeDashoffset = offset;
+            
+            // Đổi màu vòng bo tròn theo chế độ học (Normal: xanh xanh, Hardcore: đỏ cam ghê gớm)
+            if (currentMode === "STUDY") {
+                ring.style.stroke = chosenStudyMinutes === 60 ? "#ff4757" : "#00a2ff";
+            } else {
+                ring.style.stroke = "#e74c3c"; // Màu khi nghỉ ngơi
+            }
+        }
+
+        function updateRPG() {
+            levelDisplay.innerText = level;
+            xpTextDisplay.innerText = `${xp} / ${xpPerLevel}`;
+            let xpPercentage = (xp / xpPerLevel) * 100;
+            xpBarDisplay.style.width = `${xpPercentage}%`;
+        }
+
+        function changeStudyOption(minutes) {
+            if (currentMode === "BREAK") return; 
+            
+            chosenStudyMinutes = minutes;
+            document.getElementById('btn45').classList.toggle('active', minutes === 45);
+            document.getElementById('btn60').classList.toggle('active', minutes === 60);
+            
+            // Cập nhật tiêu đề hiển thị trạng thái tương ứng
+            currentModeTitle.innerText = minutes === 60 ? "CHẾ ĐỘ: HARDCORE 🔥" : "CHẾ ĐỘ: NORMAL 🎯";
+            
+            totalSeconds = chosenStudyMinutes * 60;
+            timeRemaining = totalSeconds;
+            resetTimer();
+        }
+
+        function toggleTimer() {
+            if (isPlaying) {
+                clearInterval(timerId);
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                isPlaying = false;
+            } else {
+                isPlaying = true;
+                playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                timerId = setInterval(() => {
+                    if (timeRemaining > 0) {
+                        timeRemaining--;
+                        updateUI();
+                    } else {
+                        clearInterval(timerId);
+                        handleTimeUp();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isPlaying = false;
+            playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            timeRemaining = totalSeconds;
+            updateUI();
+        }
+
+        function handleTimeUp() {
+            isPlaying = false;
+            playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+
+            if (currentMode === "STUDY") {
+                let xpGained = chosenStudyMinutes === 60 ? 2 : 1;
+                let modeText = chosenStudyMinutes === 60 ? "HARDCORE 🔥" : "NORMAL 🎯";
+                xp += xpGained;
+                
+                while (xp >= xpPerLevel) {
+                    xp -= xpPerLevel;
+                    level++;
+                }
+                updateRPG();
+
+                modalTitle.className = "modal-title study";
+                modalTitle.innerText = "HOÀN THÀNH GIỜ HỌC! 🎓";
+                modalDesc.innerHTML = `Bạn vừa hoàn thành xuất sắc ${chosenStudyMinutes} phút tập trung ở chế độ <b>${modeText}</b>!<br><b style="color: #2ecc71;">+${xpGained} Điểm kinh nghiệm (XP)</b> đã được cộng.<br><br><b>HỆ THỐNG KÍCH HOẠT CHẾ ĐỘ NGHỈ NGƠI BẮT BUỘC (15 PHÚT).</b>`;
+                
+                currentMode = "BREAK";
+                currentModeTitle.innerText = "CHẾ ĐỘ: NGHỈ NGƠI BẮT BUỘC ☕";
+                totalSeconds = 15 * 60; 
+                timeRemaining = totalSeconds;
+
+                document.getElementById('btn45').disabled = true;
+                document.getElementById('btn60').disabled = true;
+
+            } else {
+                modalTitle.className = "modal-title break";
+                modalTitle.innerText = "HẾT GIỜ NGHỈ NGƠI! ⏰";
+                modalDesc.innerHTML = "Thời gian nghỉ ngơi 15 phút đã kết thúc.<br>Hãy nạp đầy năng lượng để quay trở lại vòng lặp học tập tiếp theo nhé!";
+
+                currentMode = "STUDY";
+                currentModeTitle.innerText = chosenStudyMinutes === 60 ? "CHẾ ĐỘ: HARDCORE 🔥" : "CHẾ ĐỘ: NORMAL 🎯";
+                totalSeconds = chosenStudyMinutes * 60;
+                timeRemaining = totalSeconds;
+
+                document.getElementById('btn45').disabled = false;
+                document.getElementById('btn60').disabled = false;
+            }
+
+            timeUpModal.style.display = "flex";
+            updateUI();
+        }
+
+        function closeModal() {
+            timeUpModal.style.display = "none";
+        }
+
+        // Khởi tạo tiêu đề trạng thái ban đầu mặc định theo số phút 45
+        currentModeTitle.innerText = "CHẾ ĐỘ: NORMAL 🎯";
+        updateUI();
+        updateRPG();
+    </script>
+
+    <footer>
+        <p>Người thiết kế: <b>Nguyễn Anh Khoa</b></p>
+        <p>Liên hệ: <a href="mailto:5101103047@student.hcmue.edu.vn">5101103047@student.hcmue.edu.vn</a></p>
+    </footer>
+</body>
+</html>
